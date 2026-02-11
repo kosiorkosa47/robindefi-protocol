@@ -107,25 +107,81 @@ Every feature has been executed on-chain with real transactions:
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph PROTOCOL["RobinDeFi Protocol"]
+        direction TB
+        subgraph CORE["Core DeFi Primitives"]
+            direction LR
+            IDX["<b>RH Index Fund</b><br/>On-Chain ETFs<br/>Mint / Redeem<br/><i>0.3% fee</i>"]
+            LEND["<b>RH Lending Pool</b><br/>Collateralized Borrowing<br/>Liquidation Engine<br/><i>5% APR</i>"]
+            OPT["<b>RH Options Market</b><br/>P2P Covered Calls<br/>Write / Buy / Exercise<br/><i>1% fee</i>"]
+        end
+
+        ORACLE["<b>SimplePriceOracle</b><br/>Chainlink / Pyth ready interface"]
+        VAULT["<b>Portfolio Vault</b><br/>Multi-asset custody + time-lock"]
+    end
+
+    subgraph TOKENS["Robinhood Chain Stock Tokens"]
+        direction LR
+        TSLA["TSLA"]
+        AMZN["AMZN"]
+        PLTR["PLTR"]
+        NFLX["NFLX"]
+        AMD["AMD"]
+    end
+
+    CHAIN["<b>Robinhood Chain</b><br/>Arbitrum Orbit L2 &bull; Chain ID 46630<br/>ETH for gas &bull; Blobs for DA"]
+
+    IDX <--> ORACLE
+    LEND <--> ORACLE
+    OPT <--> TOKENS
+    IDX <--> TOKENS
+    LEND <--> TOKENS
+    VAULT <--> TOKENS
+    TOKENS --- CHAIN
+
+    style PROTOCOL fill:#1a1a2e,stroke:#e94560,stroke-width:2px,color:#fff
+    style CORE fill:#16213e,stroke:#0f3460,stroke-width:2px,color:#fff
+    style TOKENS fill:#0f3460,stroke:#533483,stroke-width:2px,color:#fff
+    style CHAIN fill:#533483,stroke:#e94560,stroke-width:2px,color:#fff
+    style IDX fill:#e94560,stroke:#fff,stroke-width:1px,color:#fff
+    style LEND fill:#e94560,stroke:#fff,stroke-width:1px,color:#fff
+    style OPT fill:#e94560,stroke:#fff,stroke-width:1px,color:#fff
+    style ORACLE fill:#0f3460,stroke:#e94560,stroke-width:1px,color:#fff
+    style VAULT fill:#0f3460,stroke:#e94560,stroke-width:1px,color:#fff
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   RobinDeFi Protocol                    │
-├──────────────┬──────────────────┬───────────────────────┤
-│  Index Fund  │  Lending Pool    │  Options Market       │
-│              │                  │                       │
-│  ERC-20      │  Collateral +    │  P2P Covered Calls    │
-│  Index Token │  ETH Borrowing   │  Write/Buy/Exercise   │
-│  Mint/Redeem │  Liquidation     │  Auto-Settlement      │
-│  0.3% fee    │  5% APR          │  1% fee               │
-├──────────────┴──────────────────┴───────────────────────┤
-│                  SimplePriceOracle                       │
-│           (Chainlink/Pyth-ready interface)               │
-├─────────────────────────────────────────────────────────┤
-│              Robinhood Chain Stock Tokens                │
-│          TSLA  |  AMZN  |  PLTR  |  NFLX  |  AMD       │
-├─────────────────────────────────────────────────────────┤
-│        Robinhood Chain (Arbitrum Orbit L2)               │
-└─────────────────────────────────────────────────────────┘
+
+### Data Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant I as Index Fund
+    participant L as Lending Pool
+    participant O as Options Market
+    participant T as Stock Tokens
+    participant E as ETH
+
+    Note over U,E: INDEX FUND — Create On-Chain ETF
+    U->>T: Approve TSLA + AMZN + PLTR
+    U->>I: mint(5 INDEX)
+    I->>T: Pull basket (50 TSLA + 75 AMZN + 250 PLTR)
+    I->>U: 4.985 rhTECH INDEX tokens (0.3% fee)
+
+    Note over U,E: LENDING — Borrow Against Stock Position
+    U->>T: Approve 100 TSLA
+    U->>L: openPosition(100 TSLA, borrow 0.002 ETH)
+    L->>T: Lock 100 TSLA collateral
+    L->>U: Send 0.002 ETH (75% LTV)
+
+    Note over U,E: OPTIONS — Covered Call Trading
+    U->>T: Approve 50 TSLA
+    U->>O: writeOption(50 TSLA, strike, premium, 7d)
+    O->>T: Lock 50 TSLA
+    U->>O: buyOption() + 0.001 ETH premium
+    U->>O: exerciseOption() + 0.005 ETH strike
+    O->>U: Release 50 TSLA to buyer
 ```
 
 ### Security
@@ -237,4 +293,4 @@ Open to grants, partnerships, and funding conversations.
 
 ---
 
-*Built for the [Robinhood Chain Developer Ecosystem](https://docs.robinhood.com/chain/) — $1M committed to builders.*
+*Built for the [Robinhood Chain Developer Ecosystem](https://docs.robinhood.com/chain/) — [$1M committed by Robinhood to the 2026 Arbitrum Open House program](https://blog.arbitrum.io/robinhood-chain-testnet/) supporting developers building on testnet and future mainnet.*

@@ -19,6 +19,9 @@ export default {
       chainId: 46630,
     },
   },
+  sourcify: {
+    enabled: true,
+  },
   etherscan: {
     apiKey: {
       robinhoodTestnet: "empty",
